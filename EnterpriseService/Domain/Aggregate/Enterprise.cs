@@ -1,0 +1,95 @@
+﻿using Domain.DomainException;
+using Domain.Entity;
+
+namespace Domain.Aggregate
+{
+    public class Enterprise
+    {
+        #region Attributes
+        private readonly List<RewardPolicy> rewardPolicies = new List<RewardPolicy>();
+        private readonly List<Capacity> capacities = new List<Capacity>();
+        private readonly List<Member> members = new List<Member>();
+        #endregion
+
+        #region Properties
+        public Guid EnterpriseID { get; private set; }
+        public Guid UserID { get; private set; }
+        public string Name { get; private set; }
+        public string TIN { get; private set; }
+        public string AvatarName { get; private set; }
+        public string Address { get; private set; }
+        public string ContactInfo { get; private set; }
+        public DateTime CreatedAt { get; private set; }
+        public bool IsActive { get; private set; }
+
+        public IReadOnlyCollection<RewardPolicy> RewardPolicies 
+        { 
+            get { return rewardPolicies.AsReadOnly(); } 
+        }
+        public IReadOnlyCollection<Capacity> Capacities
+        {
+            get { return capacities.AsReadOnly(); }
+        }
+        public IReadOnlyCollection<Member> Members
+        {
+            get { return members.AsReadOnly(); }
+        }
+        #endregion
+
+        protected Enterprise() { }
+
+        public Enterprise(
+            Guid enterpriseId, 
+            Guid userID,
+            string name,
+            string tin,
+            string avatarName,
+            string address,
+            string contactInfo, 
+            bool isActive = true)
+        {
+            ValidateIdentity(
+                enterpriseId,
+                name,
+                tin,
+                address,
+                contactInfo);
+
+            EnterpriseID = enterpriseId;
+            UserID = userID;
+            Name = name;
+            TIN = tin;
+            AvatarName = avatarName;
+            Address = address;
+            ContactInfo = contactInfo;
+            IsActive = isActive;
+            CreatedAt = DateTime.UtcNow;
+            IsActive = isActive;
+        }
+
+        #region Methods
+        public void Deactive()
+        {
+            IsActive = false;
+        }
+        #endregion
+
+        #region Private Validator
+        private void ValidateIdentity(
+            Guid enterpriseId,
+            string name,
+            string tin,
+            string address,
+            string contactInfo)
+        {
+            if (enterpriseId == Guid.Empty
+                || string.IsNullOrEmpty(name)
+                || string.IsNullOrEmpty(tin)
+                || string.IsNullOrEmpty(address)
+                || string.IsNullOrEmpty(contactInfo))
+                throw new EnterpriseAggregateException(
+                    "Enterprise must have name, TIN, address and contact information/phone number)");
+        }
+        #endregion
+    }
+}

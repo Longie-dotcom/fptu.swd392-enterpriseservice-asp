@@ -1,0 +1,75 @@
+﻿using Application.DTO;
+using Application.Enum;
+using Application.Interface.IGrpcClient;
+using Application.Interface.IService;
+using AutoMapper;
+using Domain.Aggregate;
+using Domain.IRepository;
+using Google.Protobuf.WellKnownTypes;
+using IAMServer.gRPC;
+using SWD392.MessageBroker;
+
+namespace Application.Service
+{
+    public class EnterpriseService : IEnterpriseService
+    {
+        #region Attributes
+        private readonly IIAMClient iAMClient;
+        private readonly IUnitOfWork unitOfWork;
+        private readonly IMapper mapper;
+        #endregion
+
+        #region Properties
+        #endregion
+
+        public EnterpriseService(
+            IIAMClient iAMClient,
+            IUnitOfWork unitOfWork,
+            IMapper mapper)
+        {
+            this.iAMClient = iAMClient;
+            this.unitOfWork = unitOfWork;
+            this.mapper = mapper;
+        }
+
+        #region Methods
+        public async Task CreateEnterprise(CreateEnterpriseDTO dto)
+        {
+            // Create user from IAM Service
+            var response = await iAMClient.CreateUser(new CreateUserRequest()
+            {
+                Dob = Timestamp.FromDateTime(dto.Dob.ToUniversalTime()),
+                Email = dto.Email,
+                FullName = dto.FullName,
+                Gender = dto.Gender,
+                IsActive = true,
+                Password = dto.Password,
+                Role = RoleKey.ENTERPRISE,
+            });
+
+            // Apply domain
+            var enterprise = new Enterprise(
+                Guid.NewGuid(),
+                Guid.Parse(response.UserId),
+                dto.Name,
+                dto.TIN,
+                dto.AvatarName,
+                dto.Address,
+                dto.ContactInfo,
+                true);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .Add(enterprise);
+            await unitOfWork.CommitAsync(response.UserId);
+        }
+
+        public Task UserSyncDeleting(UserDeleteDTO dto)
+        {
+            throw new NotImplementedException();
+        }
+        #endregion
+    }
+}
