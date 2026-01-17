@@ -5,21 +5,22 @@ using SWD392.MessageBroker;
 
 namespace Infrastructure.Messaging.Publisher
 {
-    public class EmailSendPublisher : IEmailSendPublisher
+    public class CollectorProfilePublisher : ICollectorProfilePublisher
     {
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public EmailSendPublisher(
+        public CollectorProfilePublisher(
             IPublishEndpoint publishEndpoint)
         {
             _publishEndpoint = publishEndpoint;
         }
 
-        public async Task SendEmail(EmailMessageDTO dto)
+        public async Task CreateCollectorProfile(CollectorProfileDTO dto)
         {
             ServiceLogger.Logging(
-                Level.Infrastructure, $"Publishing send email for email {dto.ToEmail}");
+                Level.Infrastructure, $"Publishing create collector profile for user {dto.UserID}");
             await _publishEndpoint.Publish(dto);
         }
+
     }
 }
