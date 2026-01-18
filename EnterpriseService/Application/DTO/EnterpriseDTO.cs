@@ -1,4 +1,6 @@
-﻿namespace Application.DTO
+﻿using Domain.Enum;
+
+namespace Application.DTO
 {
     // Enterprise
     public class EnterpriseDTO
@@ -68,5 +70,19 @@
         public string Gender { get; set; } = string.Empty;
         public DateTime Dob { get; set; }
         public string Password { get; set; } = string.Empty;
+    }
+
+    // Accept Report DTO
+    public class AcceptReportDTO
+    {
+        public List<Guid> BonusRuleId { get; set; } = new List<Guid>();
+        public List<Guid> PenaltyRuleId { get; set; } = new List<Guid>();
+        public Guid CollectionReportID { get; set; }
+        public Guid CollectorID { get; set; }
+        public PriorityLevel Priority { get; set; }
+        public string WasteType { get; set; } = string.Empty;
+        public string RegionCode { get; set; } = string.Empty;
+        public bool IsCorrected { get; set; }
+        public string Note { get; set; } = string.Empty;
     }
 }

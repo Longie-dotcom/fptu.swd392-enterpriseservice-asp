@@ -29,8 +29,8 @@ namespace Domain.Entity
         protected Capacity() { }
 
         public Capacity(
-            Guid capacityId, 
-            Guid enterpriseId, 
+            Guid capacityId,
+            Guid enterpriseId,
             UnitOfMeasure unitOfMeasure,
             string regionCode,
             double maxDailyCapacity)
@@ -48,6 +48,22 @@ namespace Domain.Entity
         public void Close()
         {
             ClosedAt = DateTime.UtcNow;
+        }
+
+        public CollectionAssignment AddCollectionAssignment(
+            Guid collectionReportId,
+            Guid assigneeId,
+            string note,
+            PriorityLevel priorityLevel)
+        {
+            var collectionAssignment = new CollectionAssignment(
+                Guid.NewGuid(),
+                collectionReportId,
+                CapacityID,
+                assigneeId,
+                note,
+                priorityLevel);
+            return collectionAssignment;
         }
         #endregion
     }

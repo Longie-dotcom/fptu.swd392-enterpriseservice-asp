@@ -20,6 +20,8 @@ namespace Application.Service
         private readonly IUnitOfWork unitOfWork;
         private readonly IMapper mapper;
         private readonly ICollectorProfilePublisher collectorProfilePublisher;
+        private readonly ICollectionReportStatusUpdatePublisher collectionReportStatusUpdatePublisher;
+        private readonly IIcentiveRewardPublisher icentiveRewardPublisher;
         #endregion
 
         #region Properties
@@ -29,12 +31,16 @@ namespace Application.Service
             IIAMClient iAMClient,
             IUnitOfWork unitOfWork,
             IMapper mapper,
-            ICollectorProfilePublisher collectorProfilePublisher)
+            ICollectorProfilePublisher collectorProfilePublisher,
+            ICollectionReportStatusUpdatePublisher collectionReportStatusUpdatePublisher,
+            IIcentiveRewardPublisher icentiveRewardPublisher)
         {
             this.iAMClient = iAMClient;
             this.unitOfWork = unitOfWork;
             this.mapper = mapper;
             this.collectorProfilePublisher = collectorProfilePublisher;
+            this.collectionReportStatusUpdatePublisher = collectionReportStatusUpdatePublisher;
+            this.icentiveRewardPublisher = icentiveRewardPublisher;
         }
 
         public async Task CreateMember(CreateMemberDTO dto, Guid callerId)
@@ -52,7 +58,7 @@ namespace Application.Service
 
             var enterprise = await unitOfWork
                 .GetRepository<IEnterpriseRepository>()
-                .GetByIdAsync(callerId);
+                .GetEnterpriseByUserIdAsync(callerId);
 
             if (enterprise == null)
             {
@@ -111,6 +117,48 @@ namespace Application.Service
         public Task UserSyncDeleting(UserDeleteDTO dto)
         {
             throw new NotImplementedException();
+        }
+
+        public async Task AcceptReport(AcceptReportDTO dto, Guid callerId)
+        {
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseByUserIdAsync(callerId);
+            if (enterprise == null)
+            {
+                throw new EnterpriseNotFound("Enterprise not found");
+            }
+            var collectionAssignment = enterprise.AddCollectionAssignment(
+                dto.CollectionReportID,
+                dto.RegionCode,
+                dto.CollectorID,
+                dto.Note,
+                dto.Priority);
+
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork.GetRepository<IEnterpriseRepository>()
+                .AddCollectionAssignment(collectionAssignment);
+            await unitOfWork.CommitAsync(callerId.ToString());
+
+            var (note, point) = enterprise.CalculateRewardPoint(
+                dto.IsCorrected,
+                dto.BonusRuleId,
+                dto.PenaltyRuleId);
+
+            //Pubish to Citizen Service
+            await icentiveRewardPublisher.RewardIncentive(new IncentiveRewardDTO()
+            {
+                CollectionReportID = dto.CollectionReportID,
+                Reason = note,
+                Point = point
+            });
+
+            //Publish to Update Collection Report Status
+            await collectionReportStatusUpdatePublisher.UpdateCollectionReportStatus(new CollectionReportStatusUpdateDTO()
+            {
+                CollectionReportID = dto.CollectionReportID,
+                Status = collectionAssignment.Status.ToString()
+            });
         }
         #endregion
     }

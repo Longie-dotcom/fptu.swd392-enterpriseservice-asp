@@ -12,5 +12,9 @@ namespace Application.Interface.IService
 
         Task CreateMember(
             CreateMemberDTO dto, Guid callerId);
+
+        Task AcceptReport(
+            AcceptReportDTO dto, Guid callerId);
+
     }
 }

@@ -67,9 +67,9 @@ namespace Infrastructure
                     "Failed to configure Enterprise database.");
             }
 
-             //======================
-             //2.RabbitMQ
-             //======================
+            //======================
+            //2.RabbitMQ
+            //======================
             try
             {
                 ServiceLogger.Warning(
@@ -87,8 +87,8 @@ namespace Infrastructure
                         var rabbitPassword = Environment.GetEnvironmentVariable("RABBITMQ_DEFAULT_PASS");
 
                         if (
-                        string.IsNullOrEmpty(rabbitHost) 
-                        || string.IsNullOrEmpty(rabbitUser) 
+                        string.IsNullOrEmpty(rabbitHost)
+                        || string.IsNullOrEmpty(rabbitUser)
                         || string.IsNullOrEmpty(rabbitPassword))
                         {
                             ServiceLogger.Error(
@@ -111,6 +111,9 @@ namespace Infrastructure
 
                 services.AddScoped<IEmailSendPublisher, EmailSendPublisher>();
                 services.AddScoped<ISignalRPublisher, SignalRPublisher>();
+                services.AddScoped<ICollectorProfilePublisher, CollectorProfilePublisher>();
+                services.AddScoped<IIcentiveRewardPublisher, IncentiveRewardPublisher>();
+                services.AddScoped<ICollectionReportStatusUpdatePublisher, CollectionReportStatusUpdatePublisher>();
 
                 ServiceLogger.Logging(
                     Level.Infrastructure, "RabbitMQ successfully configured.");
@@ -123,9 +126,9 @@ namespace Infrastructure
                     "Failed to configure RabbitMQ infrastructure.");
             }
 
-             //======================
-             //3.gRPC Clients
-             //======================
+            //======================
+            //3.gRPC Clients
+            //======================
             try
             {
                 ServiceLogger.Warning(

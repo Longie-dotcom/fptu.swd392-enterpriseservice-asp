@@ -1,5 +1,6 @@
 ﻿using Domain.DomainException;
 using Domain.Entity;
+using Domain.Enum;
 
 namespace Domain.Aggregate
 {
@@ -84,6 +85,83 @@ namespace Domain.Aggregate
 
             members.Add(member);
             return member;
+        }
+
+        public CollectionAssignment AddCollectionAssignment(
+            Guid collectionReportId,
+            string regionCode,
+            Guid assigneeId,
+            string note,
+            PriorityLevel priorityLevel)
+        {
+            var capacity = capacities
+                .FirstOrDefault(c => c.RegionCode == regionCode && c.ClosedAt == default);
+            if (capacity == null)
+            {
+                throw new EnterpriseAggregateException(
+                    $"No active capacity found for region code: {regionCode}");
+            }
+
+            var collectionAssignment = capacity.AddCollectionAssignment(
+                collectionReportId,
+                assigneeId,
+                note,
+                priorityLevel);
+
+            return collectionAssignment;
+        }
+
+        public (string note, int point) CalculateRewardPoint(bool isCorrected, List<Guid> bonusRuleId, List<Guid> penaltyRuleId)
+        {
+            string note = string.Empty;
+            int point = 0;
+
+            var policy = rewardPolicies
+                .FirstOrDefault(rp => rp.ExpiredDate == default);
+            if (policy == null)
+            {
+                throw new EnterpriseAggregateException(
+                    "No active reward policy found for this enterprise.");
+            }
+            if (!isCorrected)
+            {
+                foreach (var penaltyId in penaltyRuleId)
+                {
+                    var penaltyRule = policy.PenaltyRules
+                        .FirstOrDefault(pr => pr.PenaltyRuleID == penaltyId);
+                    if (penaltyRule != null)
+                    {
+                        note += $"Penalty Applied: {penaltyRule.Description}. ";
+                        point += penaltyRule.PenaltyPoint;
+                    }
+                }
+            }
+            else
+            {
+                point += policy.BasePoint;
+                note += "Base Point Awarded. ";
+                foreach (var bonusId in bonusRuleId)
+                {
+                    var bonusRule = policy.BonusRules
+                        .FirstOrDefault(br => br.PenaltyRuleID == bonusId);
+                    if (bonusRule != null)
+                    {
+                        note += $"Bonus Applied: {bonusRule.Description}. ";
+                        point += bonusRule.BonusPoint;
+                    }
+                }
+                foreach (var penaltyId in penaltyRuleId)
+                {
+                    var penaltyRule = policy.PenaltyRules
+                        .FirstOrDefault(pr => pr.PenaltyRuleID == penaltyId);
+                    if (penaltyRule != null)
+                    {
+                        note += $"Penalty Removed: {penaltyRule.Description}. ";
+                        point += penaltyRule.PenaltyPoint;
+                    }
+                }
+            }
+            return (note, point);
         }
         #endregion
 

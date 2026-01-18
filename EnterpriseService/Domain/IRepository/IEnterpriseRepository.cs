@@ -7,5 +7,9 @@ namespace Domain.IRepository
         IRepositoryBase
     {
         void AddMember(Member member);
+
+        Task<Enterprise?> GetEnterpriseByUserIdAsync(Guid userId);
+
+        void AddCollectionAssignment(CollectionAssignment collectionAssignment);
     }
 }
