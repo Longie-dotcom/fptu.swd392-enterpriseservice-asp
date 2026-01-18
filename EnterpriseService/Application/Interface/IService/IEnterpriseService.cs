@@ -9,5 +9,8 @@ namespace Application.Interface.IService
 
         Task UserSyncDeleting(
             SWD392.MessageBroker.UserDeleteDTO dto);
+
+        Task CreateMember(
+            CreateMemberDTO dto, Guid callerId);
     }
 }

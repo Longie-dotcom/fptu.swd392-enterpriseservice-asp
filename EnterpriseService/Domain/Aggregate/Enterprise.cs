@@ -22,9 +22,9 @@ namespace Domain.Aggregate
         public DateTime CreatedAt { get; private set; }
         public bool IsActive { get; private set; }
 
-        public IReadOnlyCollection<RewardPolicy> RewardPolicies 
-        { 
-            get { return rewardPolicies.AsReadOnly(); } 
+        public IReadOnlyCollection<RewardPolicy> RewardPolicies
+        {
+            get { return rewardPolicies.AsReadOnly(); }
         }
         public IReadOnlyCollection<Capacity> Capacities
         {
@@ -39,13 +39,13 @@ namespace Domain.Aggregate
         protected Enterprise() { }
 
         public Enterprise(
-            Guid enterpriseId, 
+            Guid enterpriseId,
             Guid userID,
             string name,
             string tin,
             string avatarName,
             string address,
-            string contactInfo, 
+            string contactInfo,
             bool isActive = true)
         {
             ValidateIdentity(
@@ -71,6 +71,19 @@ namespace Domain.Aggregate
         public void Deactive()
         {
             IsActive = false;
+        }
+
+        public Member CreateMember(
+            Guid memberId,
+            Guid userId)
+        {
+            var member = new Member(
+                memberId,
+                EnterpriseID,
+                userId);
+
+            members.Add(member);
+            return member;
         }
         #endregion
 

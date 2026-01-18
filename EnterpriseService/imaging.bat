@@ -1,2 +1,2 @@
-docker build -t longdong123/swd392-enterprisems:latest .
-docker push longdong123/swd392-enterprisems:latest
+docker build -t 2glitch/swd392-enterprisems:latest .
+docker push 2glitch/swd392-enterprisems:latest
