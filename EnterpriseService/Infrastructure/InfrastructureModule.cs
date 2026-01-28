@@ -114,6 +114,7 @@ namespace Infrastructure
                 services.AddScoped<ICollectorProfilePublisher, CollectorProfilePublisher>();
                 services.AddScoped<IIcentiveRewardPublisher, IncentiveRewardPublisher>();
                 services.AddScoped<ICollectionReportStatusUpdatePublisher, CollectionReportStatusUpdatePublisher>();
+                services.AddScoped<ICollectionTaskCreatePublisher, CollectionTaskCreatePublisher>();
 
                 ServiceLogger.Logging(
                     Level.Infrastructure, "RabbitMQ successfully configured.");

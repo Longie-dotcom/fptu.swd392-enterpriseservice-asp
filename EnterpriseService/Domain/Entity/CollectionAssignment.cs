@@ -10,7 +10,7 @@ namespace Domain.Entity
         #region Properties
         public Guid CollectionAssignmentID { get; private set; }
         public Guid CollectionReportID { get; private set; } // Map with Citizen Service
-        public Guid AssigneeID { get; private set; }
+        public Guid AssigneeID { get; private set; } // Map with Collection Service
         public string Note { get; private set; }
         public PriorityLevel PriorityLevel { get; private set; }
         public DateTime AcceptedAt { get; private set; }

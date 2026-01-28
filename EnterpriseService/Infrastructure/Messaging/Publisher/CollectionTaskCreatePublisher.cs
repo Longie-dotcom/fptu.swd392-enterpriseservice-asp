@@ -5,20 +5,20 @@ using SWD392.MessageBroker;
 
 namespace Infrastructure.Messaging.Publisher
 {
-    public class CollectorProfilePublisher : ICollectorProfilePublisher
+    public class CollectionTaskCreatePublisher : ICollectionTaskCreatePublisher
     {
         private readonly IPublishEndpoint _publishEndpoint;
 
-        public CollectorProfilePublisher(
+        public CollectionTaskCreatePublisher(
             IPublishEndpoint publishEndpoint)
         {
             _publishEndpoint = publishEndpoint;
         }
 
-        public async Task CreateCollectorProfile(CollectorProfileDTO dto)
+        public async Task CreateCollectionTask(CollectionTaskCreateDTO dto)
         {
             ServiceLogger.Logging(
-                Level.Infrastructure, $"Publishing create collector profile for user {dto.UserID}");
+                Level.Infrastructure, $"Publishing create collection task for collector user {dto.CollectorProfileID}");
             await _publishEndpoint.Publish(dto);
         }
     }

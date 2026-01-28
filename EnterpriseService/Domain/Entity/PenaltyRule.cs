@@ -1,4 +1,6 @@
-﻿namespace Domain.Entity
+﻿using Domain.DomainException;
+
+namespace Domain.Entity
 {
     public class PenaltyRule
     {
@@ -25,24 +27,23 @@
             int penaltyPoint,
             bool isActive = true)
         {
+            if (penaltyPoint >= 0)
+                throw new EnterpriseAggregateException(
+                    "Penalty point can not be larger or equal to 0");
+
+            if (string.IsNullOrWhiteSpace(name))
+                throw new EnterpriseAggregateException(
+                    "Penalty rule name cannot be empty");
+
             PenaltyRuleID = penaltyRuleId;
             RewardPolicyID = rewardPolicyId;
             Name = name;
-            Description = description;
+            Description = description.Trim();
             PenaltyPoint = penaltyPoint;
             IsActive = isActive;
         }
 
         #region Methods
-        public void Deactivate()
-        {
-            IsActive = false;
-        }
-
-        public void Activate()
-        {
-            IsActive = true;
-        }
         #endregion
     }
 }

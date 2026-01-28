@@ -28,10 +28,6 @@
         }
 
         #region Methods
-        public void Unassigned()
-        {
-            UnassignedAt = DateTime.UtcNow;
-        }
         #endregion
     }
 }

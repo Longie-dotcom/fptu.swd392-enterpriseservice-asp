@@ -6,10 +6,23 @@ namespace Domain.IRepository
         IGenericRepository<Enterprise>,
         IRepositoryBase
     {
-        void AddMember(Member member);
+        Task<IEnumerable<Enterprise>> QueryEnterprises(
+            string? name,
+            string? tin,
+            string? address,
+            string? contactInfo,
+            bool? isActive);
 
-        Task<Enterprise?> GetEnterpriseByUserIdAsync(Guid userId);
+        Task<Enterprise?> GetEnterpriseDetailByIdAsync(
+            Guid enterpriseId);
 
-        void AddCollectionAssignment(CollectionAssignment collectionAssignment);
+        Task<Enterprise?> GetEnterpriseByUserIdAsync(
+            Guid userId);
+
+        void AddMember(
+            Member member);
+        
+        void AddCollectionAssignment(
+            CollectionAssignment collectionAssignment);
     }
 }

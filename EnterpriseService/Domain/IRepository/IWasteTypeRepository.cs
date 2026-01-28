@@ -5,6 +5,5 @@ namespace Domain.IRepository
         IGenericRepository<WasteType>,
         IRepositoryBase
     {
-
     }
 }

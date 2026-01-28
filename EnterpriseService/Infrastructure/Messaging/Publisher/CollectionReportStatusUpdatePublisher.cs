@@ -18,7 +18,7 @@ namespace Infrastructure.Messaging.Publisher
         public async Task UpdateCollectionReportStatus(CollectionReportStatusUpdateDTO dto)
         {
             ServiceLogger.Logging(
-                            Level.Infrastructure, $"Updated status: {dto.Status}");
+                Level.Infrastructure, $"Publishing updated status: {dto.Status} for collection report with ID: {dto.CollectionReportID}");
             await _publishEndpoint.Publish(dto);
         }
     }

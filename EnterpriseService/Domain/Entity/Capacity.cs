@@ -1,4 +1,5 @@
-﻿using Domain.Enum;
+﻿using Domain.DomainException;
+using Domain.Enum;
 
 namespace Domain.Entity
 {
@@ -45,17 +46,16 @@ namespace Domain.Entity
         }
 
         #region Methods
-        public void Close()
-        {
-            ClosedAt = DateTime.UtcNow;
-        }
-
         public CollectionAssignment AddCollectionAssignment(
             Guid collectionReportId,
             Guid assigneeId,
             string note,
             PriorityLevel priorityLevel)
         {
+            if (ClosedAt != default)
+                throw new EnterpriseAggregateException(
+                    "Capacity has been closed");
+
             var collectionAssignment = new CollectionAssignment(
                 Guid.NewGuid(),
                 collectionReportId,
@@ -63,6 +63,7 @@ namespace Domain.Entity
                 assigneeId,
                 note,
                 priorityLevel);
+
             return collectionAssignment;
         }
         #endregion

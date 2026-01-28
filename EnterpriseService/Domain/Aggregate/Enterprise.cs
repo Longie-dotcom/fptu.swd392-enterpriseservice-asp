@@ -69,38 +69,47 @@ namespace Domain.Aggregate
         }
 
         #region Methods
-        public void Deactive()
-        {
-            IsActive = false;
-        }
-
         public Member CreateMember(
             Guid memberId,
             Guid userId)
         {
+            if (!IsActive)
+                throw new EnterpriseAggregateException(
+                    "Enterprise has been deactive");
+
             var member = new Member(
                 memberId,
                 EnterpriseID,
                 userId);
 
             members.Add(member);
+
             return member;
         }
 
         public CollectionAssignment AddCollectionAssignment(
             Guid collectionReportId,
-            string regionCode,
+            Guid capacityId,
             Guid assigneeId,
             string note,
-            PriorityLevel priorityLevel)
+            PriorityLevel priorityLevel,
+            string wasteType)
         {
-            var capacity = capacities
-                .FirstOrDefault(c => c.RegionCode == regionCode && c.ClosedAt == default);
-            if (capacity == null)
-            {
+            if (!IsActive)
                 throw new EnterpriseAggregateException(
-                    $"No active capacity found for region code: {regionCode}");
-            }
+                    "Enterprise has been deactive");
+
+            // Validate capacity existence
+            var capacity = capacities
+                .FirstOrDefault(c => c.CapacityID == capacityId && c.ClosedAt == default);
+            
+            if (capacity == null)
+                throw new EnterpriseAggregateException(
+                    $"No active capacity found for capacity ID: {capacityId}");
+
+            if (capacity.WasteType != wasteType)
+                throw new EnterpriseAggregateException(
+                    $"The assigned capacity does not support waste type: {wasteType}");
 
             var collectionAssignment = capacity.AddCollectionAssignment(
                 collectionReportId,
@@ -111,57 +120,79 @@ namespace Domain.Aggregate
             return collectionAssignment;
         }
 
-        public (string note, int point) CalculateRewardPoint(bool isCorrected, List<Guid> bonusRuleId, List<Guid> penaltyRuleId)
+        public (string note, int point) CalculateRewardPoint(
+            bool isCorrected, 
+            List<Guid> bonusRuleIds, 
+            List<Guid> penaltyRuleIds)
         {
+            if (!IsActive)
+                throw new EnterpriseAggregateException(
+                    "Enterprise has been deactive");
+
             string note = string.Empty;
             int point = 0;
 
+            // Validate latest policy existence
             var policy = rewardPolicies
                 .FirstOrDefault(rp => rp.ExpiredDate == default);
+
             if (policy == null)
-            {
                 throw new EnterpriseAggregateException(
                     "No active reward policy found for this enterprise.");
-            }
+
+            // Calculation logic
             if (!isCorrected)
             {
-                foreach (var penaltyId in penaltyRuleId)
+                // Apply penalty only
+                foreach (var penaltyId in penaltyRuleIds)
                 {
                     var penaltyRule = policy.PenaltyRules
                         .FirstOrDefault(pr => pr.PenaltyRuleID == penaltyId);
                     if (penaltyRule != null)
                     {
-                        note += $"Penalty Applied: {penaltyRule.Description}. ";
+                        note += $"Penalty Applied: {penaltyRule.Name}: {penaltyRule.PenaltyPoint}. ";
                         point += penaltyRule.PenaltyPoint;
                     }
                 }
             }
             else
             {
+                // Apply base point for correct report
                 point += policy.BasePoint;
-                note += "Base Point Awarded. ";
-                foreach (var bonusId in bonusRuleId)
+                note += $"Base Point Awarded: {point}. ";
+
+                // Apply bonus point
+                note += "Bonus Applied: ";
+                foreach (var bonusId in bonusRuleIds)
                 {
                     var bonusRule = policy.BonusRules
-                        .FirstOrDefault(br => br.PenaltyRuleID == bonusId);
+                        .FirstOrDefault(br => br.BonusRuleID == bonusId);
                     if (bonusRule != null)
                     {
-                        note += $"Bonus Applied: {bonusRule.Description}. ";
+                        note += $"{bonusRule.Name}: {bonusRule.BonusPoint}, ";
                         point += bonusRule.BonusPoint;
                     }
                 }
-                foreach (var penaltyId in penaltyRuleId)
+
+                // Apply penalty point
+                note += "Penalty Removed: ";
+                foreach (var penaltyId in penaltyRuleIds)
                 {
                     var penaltyRule = policy.PenaltyRules
                         .FirstOrDefault(pr => pr.PenaltyRuleID == penaltyId);
                     if (penaltyRule != null)
                     {
-                        note += $"Penalty Removed: {penaltyRule.Description}. ";
+                        note += $"{penaltyRule.Name}: {penaltyRule.PenaltyPoint}, ";
                         point += penaltyRule.PenaltyPoint;
                     }
                 }
             }
             return (note, point);
+        }
+
+        public void Deactive()
+        {
+            IsActive = false;
         }
         #endregion
 

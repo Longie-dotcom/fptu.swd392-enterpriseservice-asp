@@ -45,10 +45,6 @@
         }
 
         #region Methods
-        public void Deactivate()
-        {
-            ExpiredDate = DateTime.UtcNow;
-        }
         #endregion
     }
 }

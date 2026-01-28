@@ -18,7 +18,7 @@ namespace Infrastructure.Messaging.Publisher
         public async Task RewardIncentive(IncentiveRewardDTO dto)
         {
             ServiceLogger.Logging(
-                            Level.Infrastructure, $"Reward: {dto.Point}");
+                Level.Infrastructure, $"Publishing reward point: {dto.Point} for collection report with ID: {dto.CollectionReportID}");
             await _publishEndpoint.Publish(dto);
         }
     }

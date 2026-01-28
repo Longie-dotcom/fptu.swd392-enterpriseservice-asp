@@ -133,7 +133,7 @@ public class EnterpriseDBContext : DbContext
         // ====================
         modelBuilder.Entity<BonusRule>(entity =>
         {
-            entity.HasKey(b => b.PenaltyRuleID);
+            entity.HasKey(b => b.BonusRuleID);
 
             entity.Property(b => b.Name).IsRequired();
             entity.Property(b => b.Description);

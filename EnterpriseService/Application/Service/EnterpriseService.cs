@@ -21,6 +21,7 @@ namespace Application.Service
         private readonly IMapper mapper;
         private readonly ICollectorProfilePublisher collectorProfilePublisher;
         private readonly ICollectionReportStatusUpdatePublisher collectionReportStatusUpdatePublisher;
+        private readonly ICollectionTaskCreatePublisher collectionTaskCreatePublisher;
         private readonly IIcentiveRewardPublisher icentiveRewardPublisher;
         #endregion
 
@@ -33,7 +34,8 @@ namespace Application.Service
             IMapper mapper,
             ICollectorProfilePublisher collectorProfilePublisher,
             ICollectionReportStatusUpdatePublisher collectionReportStatusUpdatePublisher,
-            IIcentiveRewardPublisher icentiveRewardPublisher)
+            IIcentiveRewardPublisher icentiveRewardPublisher,
+            ICollectionTaskCreatePublisher collectionTaskCreatePublisher)
         {
             this.iAMClient = iAMClient;
             this.unitOfWork = unitOfWork;
@@ -41,47 +43,55 @@ namespace Application.Service
             this.collectorProfilePublisher = collectorProfilePublisher;
             this.collectionReportStatusUpdatePublisher = collectionReportStatusUpdatePublisher;
             this.icentiveRewardPublisher = icentiveRewardPublisher;
-        }
-
-        public async Task CreateMember(CreateMemberDTO dto, Guid callerId)
-        {
-            var user = await iAMClient.CreateUser(new CreateUserRequest()
-            {
-                Dob = Timestamp.FromDateTime(dto.Dob.ToUniversalTime()),
-                Email = dto.Email,
-                FullName = dto.FullName,
-                Gender = dto.Gender,
-                Password = dto.Password,
-                Role = RoleKey.COLLECTOR,
-                IsActive = true
-            });
-
-            var enterprise = await unitOfWork
-                .GetRepository<IEnterpriseRepository>()
-                .GetEnterpriseByUserIdAsync(callerId);
-
-            if (enterprise == null)
-            {
-                throw new EnterpriseNotFound("Enterprise not found");
-            }
-
-            var member = enterprise.CreateMember(Guid.NewGuid(), Guid.Parse(user.UserId));
-            await unitOfWork.BeginTransactionAsync();
-            unitOfWork.GetRepository<IEnterpriseRepository>()
-                .AddMember(member);
-            await unitOfWork.CommitAsync(user.UserId);
-
-            // Publish to Collection Service
-            await collectorProfilePublisher.CreateCollectorProfile(new CollectorProfileDTO()
-            {
-                ContactInfo = dto.ContactInfo,
-                UserID = Guid.Parse(user.UserId),
-                IsActive = true
-            });
+            this.collectionTaskCreatePublisher = collectionTaskCreatePublisher;
         }
 
         #region Methods
-        public async Task CreateEnterprise(CreateEnterpriseDTO dto)
+        public async Task<IEnumerable<EnterpriseDTO>> GetEnterprises(
+            QueryEnterpriseDTO dto,
+            Guid callerId)
+        {
+            // Validate enterprise list existence
+            var list = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .QueryEnterprises(
+                dto.Name,
+                dto.TIN,
+                dto.Address,
+                dto.ContactInfo,
+                dto.IsActive);
+
+            if (list == null || !list.Any())
+                throw new EnterpriseNotFound(
+                    "Enterprises list is not found or empty");
+
+            return mapper.Map<IEnumerable<EnterpriseDTO>>(list);
+        }
+
+        public async Task<EnterpriseDetailDTO> GetEnterpriseDetail(
+            Guid enterpriseId,
+            Guid callerId, 
+            string callerRole)
+        {
+            // Validate enterprise list existence
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseDetailByIdAsync(enterpriseId);
+
+            if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    $"Enterprise with ID: {enterpriseId} is not found");
+
+            // Authorize access
+            if (enterprise.UserID != callerId && callerRole != RoleKey.ADMIN)
+                throw new EnterpriseNotFound(
+                    $"User can not access this enterprise profile");
+
+            return mapper.Map<EnterpriseDetailDTO>(enterprise);
+        }
+
+        public async Task CreateEnterprise(
+            CreateEnterpriseDTO dto)
         {
             // Create user from IAM Service
             var response = await iAMClient.CreateUser(new CreateUserRequest()
@@ -114,38 +124,87 @@ namespace Application.Service
             await unitOfWork.CommitAsync(response.UserId);
         }
 
-        public Task UserSyncDeleting(UserDeleteDTO dto)
+        public async Task CreateMember(
+            CreateMemberDTO dto, 
+            Guid callerId)
         {
-            throw new NotImplementedException();
-        }
+            // Create collector account from IAM service
+            var user = await iAMClient.CreateUser(new CreateUserRequest()
+            {
+                Dob = Timestamp.FromDateTime(dto.Dob.ToUniversalTime()),
+                Email = dto.Email,
+                FullName = dto.FullName,
+                Gender = dto.Gender,
+                Password = dto.Password,
+                Role = RoleKey.COLLECTOR,
+                IsActive = true
+            });
 
-        public async Task AcceptReport(AcceptReportDTO dto, Guid callerId)
-        {
+            // Validate enterprise existence
             var enterprise = await unitOfWork
                 .GetRepository<IEnterpriseRepository>()
                 .GetEnterpriseByUserIdAsync(callerId);
+
             if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    "Enterprise not found");
+
+            // Apply domain
+            var member = enterprise.CreateMember(
+                Guid.NewGuid(), 
+                Guid.Parse(user.UserId));
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .AddMember(member);
+            await unitOfWork.CommitAsync(user.UserId);
+
+            // Publish to Collection Service
+            await collectorProfilePublisher.CreateCollectorProfile(new CollectorProfileDTO()
             {
-                throw new EnterpriseNotFound("Enterprise not found");
-            }
+                ContactInfo = dto.ContactInfo,
+                UserID = Guid.Parse(user.UserId),
+                IsActive = true
+            });
+        }
+
+        public async Task AcceptReport(
+            AcceptReportDTO dto,
+            Guid callerId)
+        {
+            // Validate enterprise existence
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseByUserIdAsync(callerId);
+
+            if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    "Enterprise not found");
+
+            // Apply domain
             var collectionAssignment = enterprise.AddCollectionAssignment(
                 dto.CollectionReportID,
-                dto.RegionCode,
-                dto.CollectorID,
+                dto.CapacityID,
+                dto.AssigneeID,
                 dto.Note,
-                dto.Priority);
-
-            await unitOfWork.BeginTransactionAsync();
-            unitOfWork.GetRepository<IEnterpriseRepository>()
-                .AddCollectionAssignment(collectionAssignment);
-            await unitOfWork.CommitAsync(callerId.ToString());
+                dto.Priority,
+                dto.WasteType);
 
             var (note, point) = enterprise.CalculateRewardPoint(
                 dto.IsCorrected,
-                dto.BonusRuleId,
-                dto.PenaltyRuleId);
+                dto.BonusRuleIDs,
+                dto.PenaltyRuleIDs);
 
-            //Pubish to Citizen Service
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .AddCollectionAssignment(collectionAssignment);
+            await unitOfWork.CommitAsync(callerId.ToString());
+
+            // Publish to Citizen Service
             await icentiveRewardPublisher.RewardIncentive(new IncentiveRewardDTO()
             {
                 CollectionReportID = dto.CollectionReportID,
@@ -153,12 +212,41 @@ namespace Application.Service
                 Point = point
             });
 
-            //Publish to Update Collection Report Status
+            // Publish to Citizen Service
             await collectionReportStatusUpdatePublisher.UpdateCollectionReportStatus(new CollectionReportStatusUpdateDTO()
             {
                 CollectionReportID = dto.CollectionReportID,
                 Status = collectionAssignment.Status.ToString()
             });
+
+            // Publish to Collection Service
+            await collectionTaskCreatePublisher.CreateCollectionTask(new CollectionTaskCreateDTO()
+            {
+                CollectionReportID = collectionAssignment.CollectionReportID,
+                CollectorProfileID = collectionAssignment.AssigneeID
+            });
+        }
+
+        public async Task UserSyncDeleting(UserDeleteDTO dto)
+        {
+            // Validate enterprise existence
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseByUserIdAsync(dto.UserID);
+
+            if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    $"The enterprise with user ID: {dto.UserID} is not found");
+
+            // Apply domain
+            enterprise.Deactive();
+
+            // Apply persistence;
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .Update(enterprise.EnterpriseID, enterprise);
+            await unitOfWork.CommitAsync();
         }
         #endregion
     }
