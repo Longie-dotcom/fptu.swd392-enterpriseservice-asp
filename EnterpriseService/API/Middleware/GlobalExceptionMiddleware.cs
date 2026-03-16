@@ -51,7 +51,7 @@ namespace API.Middleware
 
                 // Not Found Exceptions - 404 Not Found
                 case 
-                EnterpriseNotFound:
+                EnterpriseNotFound or CollectionAssignmentNotFound:
                     ServiceLogger.Warning(
                         Level.API, $"Resource not found: {exception.GetType().Name}, detail: {exception.Message}");
                     context.Response.StatusCode = StatusCodes.Status404NotFound;

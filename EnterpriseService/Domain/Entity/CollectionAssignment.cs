@@ -40,6 +40,10 @@ namespace Domain.Entity
         }
 
         #region Methods
+        public void UpdateStatus(CollectionReportStatus status)
+        {
+            Status = status;
+        }
         #endregion
     }
 }

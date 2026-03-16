@@ -88,6 +88,13 @@ namespace Infrastructure.Persistence.Repository
                 .FirstOrDefaultAsync();
         }
 
+        public async Task<CollectionAssignment?> GetCollectionAssignmentByReportIdAsync(
+            Guid collectionReportId)
+        {
+            return await context.CollectionAssignments.FirstOrDefaultAsync(
+                cs => cs.CollectionReportID == collectionReportId);
+        }
+
         public void AddRewardPolicy(
             RewardPolicy rewardPolicy)
         {

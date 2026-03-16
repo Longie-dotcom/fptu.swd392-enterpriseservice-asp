@@ -79,6 +79,7 @@ namespace Infrastructure
                 {
                     // Add all consumers for this service
                     x.AddConsumer<UserDeleteConsumer>();
+                    x.AddConsumer<CollectionReportStatusUpdateConsumer>();
 
                     x.UsingRabbitMq((context, cfg) =>
                     {
@@ -105,6 +106,11 @@ namespace Infrastructure
                         cfg.ReceiveEndpoint("enterprise_delete_consumer", e =>
                         {
                             e.ConfigureConsumer<UserDeleteConsumer>(context);
+                        });
+
+                        cfg.ReceiveEndpoint("enterprise_collection_assignment_status_update_consumer", e =>
+                        {
+                            e.ConfigureConsumer<CollectionReportStatusUpdateConsumer>(context);
                         });
                     });
                 });

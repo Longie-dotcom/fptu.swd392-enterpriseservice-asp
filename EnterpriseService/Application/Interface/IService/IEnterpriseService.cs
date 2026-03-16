@@ -40,5 +40,8 @@ namespace Application.Interface.IService
 
         Task UserSyncDeleting(
             SWD392.MessageBroker.UserDeleteDTO dto);
+
+        Task UpdateCollectionReportStatus(
+            SWD392.MessageBroker.CollectionReportStatusUpdateDTO dto);
     }
 }

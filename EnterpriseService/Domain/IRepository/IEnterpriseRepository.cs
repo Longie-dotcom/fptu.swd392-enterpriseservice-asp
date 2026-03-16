@@ -21,6 +21,9 @@ namespace Domain.IRepository
         Task<Enterprise?> GetEnterpriseByUserIdAsync(
             Guid userId);
 
+        Task<CollectionAssignment?> GetCollectionAssignmentByReportIdAsync(
+            Guid collectionReportId);
+
         void AddRewardPolicy(
             RewardPolicy rewardPolicy);
 

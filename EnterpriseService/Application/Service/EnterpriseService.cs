@@ -6,6 +6,7 @@ using Application.Interface.IPublisher;
 using Application.Interface.IService;
 using AutoMapper;
 using Domain.Aggregate;
+using Domain.Enum;
 using Domain.IRepository;
 using Google.Protobuf.WellKnownTypes;
 using IAMServer.gRPC;
@@ -312,6 +313,8 @@ namespace Application.Service
                 dto.BonusRuleIDs,
                 dto.PenaltyRuleIDs);
 
+            Console.WriteLine($"AAAAAAAAAAAAAAAA: {note}, BBBBBBBBBBBBBBBBBBBBBBBBBBBB: {point}");
+
             // Apply persistence
             await unitOfWork.BeginTransactionAsync();
             unitOfWork
@@ -361,6 +364,30 @@ namespace Application.Service
             unitOfWork
                 .GetRepository<IEnterpriseRepository>()
                 .Update(enterprise.EnterpriseID, enterprise);
+            await unitOfWork.CommitAsync();
+        }
+
+        public async Task UpdateCollectionReportStatus(CollectionReportStatusUpdateDTO dto)
+        {
+            // Validate collection report existence
+            var collectionAssigment = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetCollectionAssignmentByReportIdAsync(dto.CollectionReportID);
+
+            if (collectionAssigment == null)
+                throw new CollectionAssignmentNotFound(
+                    $"The collection report with ID: {dto.CollectionReportID} is not found");
+
+            // Validate status enum
+            if (!System.Enum.TryParse<CollectionReportStatus>(dto.Status, true, out var status))
+                throw new Exception(
+                    $"Invalid collection report status: {dto.Status}");
+
+            // Apply domain
+            collectionAssigment.UpdateStatus(status);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
             await unitOfWork.CommitAsync();
         }
         #endregion
