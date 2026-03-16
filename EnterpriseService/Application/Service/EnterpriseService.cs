@@ -59,7 +59,9 @@ namespace Application.Service
                 dto.TIN,
                 dto.Address,
                 dto.ContactInfo,
-                dto.IsActive);
+                dto.IsActive,
+                dto.PageIndex,
+                dto.PageSize);
 
             if (list == null || !list.Any())
                 throw new EnterpriseNotFound(
@@ -85,9 +87,68 @@ namespace Application.Service
             // Authorize access
             if (enterprise.UserID != callerId && callerRole != RoleKey.ADMIN)
                 throw new EnterpriseNotFound(
-                    $"User can not access this enterprise profile");
+                    $"User can not access this enterprise detail");
 
             return mapper.Map<EnterpriseDetailDTO>(enterprise);
+        }
+
+        public async Task<EnterpriseDetailDTO> GetMyEnterpriseProfile(
+            Guid callerId,
+            string callerRole)
+        {
+            // Validate enterprise list existence
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseByUserIdAsync(callerId);
+
+            if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    $"Enterprise with user ID: {callerId} is not found");
+
+            var mappedEnterprise = mapper.Map<EnterpriseDetailDTO>(enterprise);
+
+            // Populate collector information with user data
+            foreach (var collector in mappedEnterprise.Members)
+            {
+                var user = await iAMClient.GetUser(new GetUserRequest() 
+                { 
+                    CreatedBy = callerId.ToString(),
+                    Role = callerRole.ToString(),
+                    UserId = collector.UserID.ToString(),
+                });
+
+                var mappedUser = new UserDTO()
+                {
+                    Dob = user.Dob.ToDateTime(),
+                    Email = user.Email,
+                    Gender = user.Gender,
+                    FullName = user.FullName,
+                    IsActive = user.IsActive,
+                };
+
+                collector.UserInformation = mappedUser;
+            }
+
+            // Authorize access
+            if (enterprise.UserID != callerId && callerRole != RoleKey.ADMIN)
+                throw new EnterpriseNotFound(
+                    $"User can not access this enterprise detail");
+
+            return mappedEnterprise;
+        }
+
+        public async Task<IEnumerable<WasteTypeDTO>> GetWasteTypes()
+        {
+            // Validate waste type list existence
+            var list = await unitOfWork
+                .GetRepository<IWasteTypeRepository>()
+                .GetAllAsync();
+
+            if (list == null || !list.Any())
+                throw new WasteTypeNotFound(
+                    $"Waste type list is not found or empty");
+
+            return mapper.Map<IEnumerable<WasteTypeDTO>>(list);
         }
 
         public async Task CreateEnterprise(
@@ -124,6 +185,61 @@ namespace Application.Service
             await unitOfWork.CommitAsync(response.UserId);
         }
 
+        public async Task CreateRewardPolicy(
+            CreateRewardPolicyDTO dto, 
+            Guid callerId)
+        {
+            // Validate enterprise existence
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseByUserIdAsync(callerId);
+
+            if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    "Enterprise not found");
+
+            // Apply domain
+            var rewardPolicy = enterprise.AddRewardPolicy(
+                dto.Name,
+                dto.Description,
+                dto.BasePoint);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .AddRewardPolicy(rewardPolicy);
+            await unitOfWork.CommitAsync(callerId.ToString());
+        }
+
+        public async Task CreateCapacity(
+            CreateCapacityDTO dto,
+            Guid callerId)
+        {
+            // Validate enterprise existence
+            var enterprise = await unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .GetEnterpriseByUserIdAsync(callerId);
+
+            if (enterprise == null)
+                throw new EnterpriseNotFound(
+                    "Enterprise not found");
+
+            // Apply domain
+            var capacity = enterprise.AddCapacity(
+                dto.RegionCode,
+                dto.UnitOfMeasure,
+                dto.WasteType,
+                dto.MaxDailyCapacity);
+
+            // Apply persistence
+            await unitOfWork.BeginTransactionAsync();
+            unitOfWork
+                .GetRepository<IEnterpriseRepository>()
+                .AddCapacity(capacity);
+            await unitOfWork.CommitAsync(callerId.ToString());
+        }
+
         public async Task CreateMember(
             CreateMemberDTO dto, 
             Guid callerId)
@@ -150,8 +266,7 @@ namespace Application.Service
                     "Enterprise not found");
 
             // Apply domain
-            var member = enterprise.CreateMember(
-                Guid.NewGuid(), 
+            var member = enterprise.AddMember(
                 Guid.Parse(user.UserId));
 
             // Apply persistence
@@ -161,7 +276,7 @@ namespace Application.Service
                 .AddMember(member);
             await unitOfWork.CommitAsync(user.UserId);
 
-            // Publish to Collection Service
+            // Publish to Collection Service - create profile
             await collectorProfilePublisher.CreateCollectorProfile(new CollectorProfileDTO()
             {
                 ContactInfo = dto.ContactInfo,
@@ -170,8 +285,8 @@ namespace Application.Service
             });
         }
 
-        public async Task AcceptReport(
-            AcceptReportDTO dto,
+        public async Task CreateCollectionAssignment(
+            CreateCollectionAssignmentDTO dto,
             Guid callerId)
         {
             // Validate enterprise existence
@@ -223,7 +338,7 @@ namespace Application.Service
             await collectionTaskCreatePublisher.CreateCollectionTask(new CollectionTaskCreateDTO()
             {
                 CollectionReportID = collectionAssignment.CollectionReportID,
-                CollectorProfileID = collectionAssignment.AssigneeID
+                CollectorUserID = collectionAssignment.AssigneeID
             });
         }
 

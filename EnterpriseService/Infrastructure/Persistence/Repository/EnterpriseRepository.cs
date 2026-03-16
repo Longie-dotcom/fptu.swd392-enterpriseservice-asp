@@ -23,7 +23,9 @@ namespace Infrastructure.Persistence.Repository
             string? tin,
             string? address,
             string? contactInfo,
-            bool? isActive) // make nullable so it can be optional
+            bool? isActive,
+            int pageIndex,
+            int pageSize)
         {
             IQueryable<Enterprise> query = context.Enterprises.AsQueryable();
 
@@ -42,8 +44,16 @@ namespace Infrastructure.Persistence.Repository
             if (isActive.HasValue)
                 query = query.Where(e => e.IsActive == isActive.Value);
 
-            // Order by Name
+            // Always order before paging
             query = query.OrderBy(e => e.Name);
+
+            // Paging
+            if (pageIndex >= 0 && pageSize > 0)
+            {
+                query = query
+                    .Skip(pageIndex * pageSize)
+                    .Take(pageSize);
+            }
 
             return await query.ToListAsync();
         }
@@ -76,6 +86,18 @@ namespace Infrastructure.Persistence.Repository
                 .Include(e => e.RewardPolicies)
                     .ThenInclude(rp => rp.PenaltyRules)
                 .FirstOrDefaultAsync();
+        }
+
+        public void AddRewardPolicy(
+            RewardPolicy rewardPolicy)
+        {
+            context.RewardPolicies.Add(rewardPolicy);
+        }
+
+        public void AddCapacity(
+            Capacity capacity)
+        {
+            context.Capacities.Add(capacity);
         }
 
         public void AddMember(

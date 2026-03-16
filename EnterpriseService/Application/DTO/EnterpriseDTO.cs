@@ -1,4 +1,5 @@
 ﻿using Domain.Enum;
+using SWD392.MessageBroker;
 
 namespace Application.DTO
 {
@@ -34,11 +35,13 @@ namespace Application.DTO
 
     public class QueryEnterpriseDTO
     {
-        public string Name { get; set; } = string.Empty;
-        public string TIN { get; set; } = string.Empty;
-        public string Address { get; set; } = string.Empty;
-        public string ContactInfo { get; set; } = string.Empty;
-        public bool IsActive { get; set; }
+        public string? Name { get; set; } = string.Empty;
+        public string? TIN { get; set; } = string.Empty;
+        public string? Address { get; set; } = string.Empty;
+        public string? ContactInfo { get; set; } = string.Empty;
+        public bool? IsActive { get; set; }
+        public int PageIndex { get; set; } = 1;
+        public int PageSize { get; set; } = 1;
     }
 
     public class CreateEnterpriseDTO
@@ -72,7 +75,9 @@ namespace Application.DTO
 
     public class CreateRewardPolicyDTO
     {
-
+        public string Name { get; set; } = string.Empty;
+        public string Description { get; set; } = string.Empty;
+        public int BasePoint { get; set; }
     }
 
     // Bonus Rule
@@ -124,7 +129,10 @@ namespace Application.DTO
 
     public class CreateCapacityDTO
     {
-
+        public double MaxDailyCapacity { get; set; }
+        public string RegionCode { get; set; } = string.Empty;
+        public UnitOfMeasure UnitOfMeasure { get; set; }
+        public string WasteType { get; set; } = string.Empty;
     }
 
     // Member
@@ -135,6 +143,19 @@ namespace Application.DTO
         public DateTime AssignedAt { get; set; }
         public DateTime UnassignedAt { get; set; }
         public Guid EnterpriseID { get; set; }
+
+        public UserDTO? UserInformation { get; set; }
+    }
+
+    public class UserDTO
+    {
+        public Guid UserID { get; set; }
+        public string FullName { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
+        public string Gender { get; set; } = string.Empty;
+        public DateTime Dob { get; set; }
+        public bool IsActive { get; set; }
+        public Guid CreatedBy { get; private set; }
     }
 
     public class CreateMemberDTO
@@ -160,7 +181,7 @@ namespace Application.DTO
         public Guid CapacityID { get; set; }
     }
 
-    public class AcceptReportDTO
+    public class CreateCollectionAssignmentDTO
     {
         public Guid CollectionReportID { get; set; }
         public Guid CapacityID { get; set; }

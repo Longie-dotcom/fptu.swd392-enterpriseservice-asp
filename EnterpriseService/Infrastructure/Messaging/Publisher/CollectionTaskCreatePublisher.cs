@@ -18,7 +18,7 @@ namespace Infrastructure.Messaging.Publisher
         public async Task CreateCollectionTask(CollectionTaskCreateDTO dto)
         {
             ServiceLogger.Logging(
-                Level.Infrastructure, $"Publishing create collection task for collector user {dto.CollectorProfileID}");
+                Level.Infrastructure, $"Publishing create collection task for collector has user ID: {dto.CollectorUserID}");
             await _publishEndpoint.Publish(dto);
         }
     }

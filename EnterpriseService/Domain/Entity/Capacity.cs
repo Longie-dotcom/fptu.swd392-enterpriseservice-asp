@@ -32,8 +32,9 @@ namespace Domain.Entity
         public Capacity(
             Guid capacityId,
             Guid enterpriseId,
-            UnitOfMeasure unitOfMeasure,
             string regionCode,
+            UnitOfMeasure unitOfMeasure,
+            string wasteType,
             double maxDailyCapacity)
         {
             CapacityID = capacityId;
@@ -41,6 +42,7 @@ namespace Domain.Entity
             MaxDailyCapacity = maxDailyCapacity;
             RegionCode = regionCode;
             UnitOfMeasure = unitOfMeasure;
+            WasteType = wasteType;
             CurrentLoad = 0;
             CreatedAt = DateTime.UtcNow;
         }

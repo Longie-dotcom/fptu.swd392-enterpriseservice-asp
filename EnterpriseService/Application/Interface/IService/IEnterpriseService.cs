@@ -13,15 +13,29 @@ namespace Application.Interface.IService
             Guid callerId, 
             string callerRole);
 
+        Task<EnterpriseDetailDTO> GetMyEnterpriseProfile(
+            Guid callerId,
+            string callerRole);
+
+        Task<IEnumerable<WasteTypeDTO>> GetWasteTypes();
+
         Task CreateEnterprise(
             CreateEnterpriseDTO dto);
+
+        Task CreateRewardPolicy(
+            CreateRewardPolicyDTO dto,
+            Guid callerId);
+
+        Task CreateCapacity(
+            CreateCapacityDTO dto,
+            Guid callerId);
 
         Task CreateMember(
             CreateMemberDTO dto, 
             Guid callerId);
 
-        Task AcceptReport(
-            AcceptReportDTO dto, 
+        Task CreateCollectionAssignment(
+            CreateCollectionAssignmentDTO dto, 
             Guid callerId);
 
         Task UserSyncDeleting(

@@ -11,13 +11,21 @@ namespace Domain.IRepository
             string? tin,
             string? address,
             string? contactInfo,
-            bool? isActive);
+            bool? isActive,
+            int pageIndex,
+            int pageSize);
 
         Task<Enterprise?> GetEnterpriseDetailByIdAsync(
             Guid enterpriseId);
 
         Task<Enterprise?> GetEnterpriseByUserIdAsync(
             Guid userId);
+
+        void AddRewardPolicy(
+            RewardPolicy rewardPolicy);
+
+        void AddCapacity(
+            Capacity capacity);
 
         void AddMember(
             Member member);

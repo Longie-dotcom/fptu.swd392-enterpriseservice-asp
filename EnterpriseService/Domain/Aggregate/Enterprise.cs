@@ -69,8 +69,51 @@ namespace Domain.Aggregate
         }
 
         #region Methods
-        public Member CreateMember(
-            Guid memberId,
+        public RewardPolicy AddRewardPolicy(
+            string name,
+            string description,
+            int basePoint)
+        {
+            if (!IsActive)
+                throw new EnterpriseAggregateException(
+                    "Enterprise has been deactive");
+
+            var rewardPolicy = new RewardPolicy(
+                Guid.NewGuid(),
+                EnterpriseID,
+                name,
+                description,
+                basePoint);
+
+            rewardPolicies.Add(rewardPolicy);
+
+            return rewardPolicy;
+        }
+
+        public Capacity AddCapacity(
+            string regionCode,
+            UnitOfMeasure unitOfMeasure,
+            string wasteType,
+            double maxDailyCapacity)
+        {
+            if (!IsActive)
+                throw new EnterpriseAggregateException(
+                    "Enterprise has been deactive");
+
+            var capacity = new Capacity(
+                Guid.NewGuid(),
+                EnterpriseID,
+                regionCode,
+                unitOfMeasure,
+                wasteType,
+                maxDailyCapacity);
+
+            capacities.Add(capacity);
+
+            return capacity;
+        }
+
+        public Member AddMember(
             Guid userId)
         {
             if (!IsActive)
@@ -78,7 +121,7 @@ namespace Domain.Aggregate
                     "Enterprise has been deactive");
 
             var member = new Member(
-                memberId,
+                Guid.NewGuid(),
                 EnterpriseID,
                 userId);
 

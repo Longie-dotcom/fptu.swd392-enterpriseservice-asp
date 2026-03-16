@@ -25,7 +25,7 @@ namespace API.Controllers
         }
 
         #region Methods
-        [AuthorizePrivilege("ViewEnterpriseProfile")]
+        [AuthorizePrivilege("ViewEnterprise")]
         [HttpGet]
         public async Task<IActionResult> GetEnterprises(
             [FromQuery] QueryEnterpriseDTO dto)
@@ -37,21 +37,66 @@ namespace API.Controllers
             return Ok(list);
         }
 
-        [AuthorizePrivilege("ViewEnterpriseProfile")]
-        [HttpGet("{id:guid}")]
+        [AuthorizePrivilege("ViewEnterprise")]
+        [HttpGet("{enterpriseId:guid}")]
         public async Task<IActionResult> GetEnterpriseDetail(
-            Guid id)
+            Guid enterpriseId)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
             var enterprise = await enterpriseService.GetEnterpriseDetail(
-                id,
+                enterpriseId,
                 claims.userId,
                 claims.role);
             return Ok(enterprise);
         }
 
-        [AuthorizePrivilege("CreateEnterpriseCollector")]
-        [HttpPost("create-collector")]
+        [AuthorizePrivilege("ViewEnterprise")]
+        [HttpGet("my-profile")]
+        public async Task<IActionResult> GetMyEnterpriseProfile(
+            Guid enterpriseId)
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            var enterprise = await enterpriseService.GetMyEnterpriseProfile(
+                claims.userId,
+                claims.role);
+            return Ok(enterprise);
+        }
+
+        [AuthorizePrivilege("ViewWasteType")]
+        [HttpGet("waste-type")]
+        public async Task<IActionResult> GetWasteTypes()
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            var list = await enterpriseService.GetWasteTypes();
+            return Ok(list);
+        }
+
+        [AuthorizePrivilege("CreateRewardPolicy")]
+        [HttpPost("reward-policy")]
+        public async Task<IActionResult> CreateRewardPolicy(
+            [FromBody] CreateRewardPolicyDTO dto)
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await enterpriseService.CreateRewardPolicy(
+                dto,
+                claims.userId);
+            return Ok("The reward policy has been created successfully.");
+        }
+
+        [AuthorizePrivilege("CreateCapacity")]
+        [HttpPost("capacity")]
+        public async Task<IActionResult> CreateCapacity(
+            [FromBody] CreateCapacityDTO dto)
+        {
+            var claims = CheckClaimHelper.CheckClaim(User);
+            await enterpriseService.CreateCapacity(
+                dto,
+                claims.userId);
+            return Ok("The capacity has been registered successfully.");
+        }
+
+        [AuthorizePrivilege("CreateMember")]
+        [HttpPost("member")]
         public async Task<IActionResult> CreateMember(
             [FromBody] CreateMemberDTO dto)
         {
@@ -59,16 +104,16 @@ namespace API.Controllers
             await enterpriseService.CreateMember(
                 dto,
                 claims.userId);
-            return Ok("The collector account has been created successfully.");
+            return Ok("The collector profile has been created successfully.");
         }
 
-        [AuthorizePrivilege("AcceptCollectionReport")]
-        [HttpPost("accept-collection-report")]
-        public async Task<IActionResult> AcceptReport(
-            [FromBody] AcceptReportDTO dto)
+        [AuthorizePrivilege("CreateCollectionAssignment")]
+        [HttpPost("collection-assignment")]
+        public async Task<IActionResult> CreateCollectionAssignment(
+            [FromBody] CreateCollectionAssignmentDTO dto)
         {
             var claims = CheckClaimHelper.CheckClaim(User);
-            await enterpriseService.AcceptReport(
+            await enterpriseService.CreateCollectionAssignment(
                 dto,
                 claims.userId);
             return Ok("The collection report has been accepted successfully.");
